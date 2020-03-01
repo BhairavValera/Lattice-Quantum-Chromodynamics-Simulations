@@ -5,5 +5,5 @@ A more robust [findBounce.py](https://github.com/BhairavValera/Lattice-Quantum-C
 
 [QuarticPotential.py](https://github.com/BhairavValera/Lattice-Quantum-Chromodynamics-Simulations/blob/master/QuarticPotential.py) requires refactoring.
 
-Further updates soon!
+Further updates soon.
 
