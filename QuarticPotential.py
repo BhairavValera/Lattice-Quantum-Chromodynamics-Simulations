@@ -15,7 +15,7 @@ N_cor = 20
 N_cf = 3000
 
 a = 0.5
-b = 0.01
+b = 0.001
 c = 1.85
 d = 1
 
@@ -67,8 +67,8 @@ def plotAction(action_list):
 	plt.show()
 
 def dS(j, x):
-	jp = (j + 1)%N
-	jm = (j - 1)%N
+	jp = (j + 1) % N
+	jm = (j - 1) % N
 	return (-1.0)/2.0* x[j] * (x[jp] - 2.0*x[j] + x[jm])/a + (d*(x[j]**2 - c**2)**2 + b*x[j])*a
 
 def action(x):
@@ -78,7 +78,7 @@ def action(x):
 	return S
 
 def update(x):
-	for j in range (0, N):
+	for j in range (0, N - 2):
 		old_x = x[j]
 		j_inc = (j + 1) % N
 		j_dec = (j - 1) % N
@@ -92,7 +92,7 @@ def update(x):
 
 def cool_update(x):
 	x_cool = np.zeros(N_cf)
-	for j in range (0, N):
+	for j in range (0, N - 2):
 		old_x = x[j]
 		j_inc = (j + 1) % N
 		j_dec = (j - 1) % N
@@ -107,7 +107,7 @@ def cool_update(x):
 			x_cool[j] = old_x
 	return x_cool
 
-def metropolis(x, X, average_x, action_list):
+def metropolis(x, X, average_x, action_list, tv):
 	for j in range(0, 5 * N_cor):
 		x = update(x)
 	for alpha in range(1, N_cf):
@@ -115,7 +115,10 @@ def metropolis(x, X, average_x, action_list):
 			x = update(x)
 			X.append(x)
 			average_x[alpha] = np.average(x)
-			action_list[alpha] = action(x) 
+			action_list[alpha] = action(x)
+			if abs(np.average(x) - tv) < 0.5:
+				print("broken")
+				return X, average_x, action_list
 	return X, average_x, action_list
 
 if __name__ == '__main__':
@@ -123,7 +126,13 @@ if __name__ == '__main__':
 	average_x[0] = np.average(x)
 	action_list[0] = np.average(x)
 	X.append(x)
-	X, average_x, action_list = metropolis(x, X, average_x, action_list)
-	#the peak action corresponds to a bounce
-	bounce_traj = X[np.argmax(action_list)]
-	bounce_traj_cooled = cool_update(bounce_traj)
+	tv = fmin(V, -1.7)
+	X, average_x, action_list = metropolis(x, X, average_x, action_list, tv)
+	average_x_plot, ax1 = plt.subplots()
+	print(average_x)
+	print(len(average_x))
+	ax1.plot(range(len(average_x)), average_x)
+	plt.show()
+	# the peak action corresponds to a bounce
+	# bounce_traj = X[np.argmax(action_list)]
+	# bounce_traj_cooled = cool_update(bounce_traj)
