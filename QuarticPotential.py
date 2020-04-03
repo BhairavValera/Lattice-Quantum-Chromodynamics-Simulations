@@ -78,7 +78,7 @@ if __name__ == '__main__':
 	tv = fmin(V, -0.1)
 	X, average_x, action_list = metropolis(x, X, average_x, action_list, tv)
 	"""Saves data from this run externally so it can be accessed by another file"""
-	np.savetxt("configuration_space", X)
-	np.savetxt("average_position", average_x)
-	np.savetxt("action_list", action_list)
+	np.savetxt("configuration_space.txt", X)
+	np.savetxt("average_position.txt", average_x)
+	np.savetxt("action_list.txt", action_list)
 	print("Failed updates: ", (num_fail/num_update) * 100, "%")

@@ -4,7 +4,6 @@ from scipy.optimize import fmin
 from scipy.integrate import odeint
 from scipy.optimize import fsolve
 from scipy.stats import pearsonr
-from matplotlib import rc
 from QuarticPotential import N, N_cf, dS, eps, a, b, c, d
 
 def V(x):
@@ -85,10 +84,10 @@ def plotArray(array):
     plt.show()
 
 if __name__ == "__main__":
-    X = np.loadtxt("configuration_space")
-    average_x = np.loadtxt("average_position")
-    action_list = np.loadtxt("action_list")
-    potential_bounces = X[0:500]
+    X = np.loadtxt("configuration_space.txt")
+    average_x = np.loadtxt("average_position.txt")
+    action_list = np.loadtxt("action_list.txt")
+    potential_bounces = X[500:1000]
     plotArray(average_x)
     plotBounce(findAnalyticBounce(), potential_bounces)
     
