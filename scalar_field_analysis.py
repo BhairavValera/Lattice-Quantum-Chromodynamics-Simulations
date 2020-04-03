@@ -6,7 +6,7 @@ from findBounce import findBounce
 from mpl_toolkits import mplot3d
 from scipy.stats import pearsonr
 from MonteCarloEstimator import cool_update
-from linear_field import dS, N, eps, N_cf
+from scalar_field import dS, N, eps, N_cf
 
 """Use this analysis code after scalar fields have been generated. To generate fields, run scalar_field.py, otherwise, the interpreter will throw errors."""
 
