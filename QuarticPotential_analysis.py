@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import fmin
 from scipy.integrate import odeint
 from scipy.optimize import fsolve
+from scipy.optimize import curve_fit
 from scipy.stats import pearsonr
 from QuarticPotential import N, N_cf, dS, eps, a, b, c, d
 
@@ -19,43 +20,55 @@ def findAnalyticBounce():
     min_V = V(min_x)
     #start at the right spot; same value of the false vacuum "up the hill"
     initial_position = fsolve(lambda x: V(x) - min_V, -1.8)[0]
-    # initial_condition_neg = [0.0, np.abs(initial_position)]
-    # _, bounce_sol_neg = odeint(bounce_EOM, initial_condition_neg, np.linspace(-4.0, 0, 1000)).T
     initial_condition_pos = [0.0, -np.abs(initial_position)]
     _, bounce_sol_pos = odeint(bounce_EOM, initial_condition_pos, np.linspace(0, N*a/2, 1000)).T
-    # bounce_sol_neg = np.flip(bounce_sol_pos)
-    # bounce_sol = list(bounce_sol_neg) + list(bounce_sol_pos)
-    return bounce_sol_pos
+    bounce_sol_neg = np.flip(bounce_sol_pos)
+    bounce_sol = list(bounce_sol_neg) + list(bounce_sol_pos)
+    return bounce_sol
 
-def plotBounce(analytic_bounce_sol, X):
+def findMonteCarloBounce(analytic_bounce_sol, configuration_space, average_x, fv):
     """Preprocessing the analytic bounce solution for statistical comparisons"""
-    bounce_sol_trunc = np.zeros(int(N/2))
+    bounce_sol_trunc = np.zeros(N)
     i = 0
     j = 0
-    increment = int(1000/(N/2))
-    traj = X[0][int(len(X[0])/2):]
-    # print(analytic_bounce_sol[0])
-    while j < 1000:
-        if i == int(len(X[0])/2):
+    increment = int(len(analytic_bounce_sol)/N)
+    while j < len(analytic_bounce_sol):
+        if i == int(len(X[0])):
             break
         bounce_sol_trunc[i] = analytic_bounce_sol[j]
         j += increment
         i += 1
-    """Finding the closest trajectory"""
-    closest_trajectory = np.zeros(int(N/2))
-    current_closeness = -np.infty
-    for x in X:
-        traj = x[int(len(X[0])/2):]
-        new_closeness = pearsonr(bounce_sol_trunc, traj)
-        if new_closeness[0] > current_closeness:
-            closest_trajectory = traj
 
+    """List keeps track of all potential bounces"""
+    potential_bounce_idx = []
+    for i in range(len(average_x)):
+        if average_x[i] < -1:
+            break
+        elif np.abs(average_x[i] - fv) >= 0.4:
+            if np.abs(min(configuration_space[i]) - min(bounce_sol_trunc)) <= 0.7:
+                potential_bounce_idx.append(i)
+            else:
+                continue
+
+    print(potential_bounce_idx)
+    """Finding the closest trajectory"""
+    closest_trajectory = np.zeros(N)
+    current_closeness = -np.infty
+    for i in potential_bounce_idx:
+        new_closeness = np.corrcoef(configuration_space[i], bounce_sol_trunc)[0][1]
+        if new_closeness > current_closeness:
+            current_closeness = new_closeness
+            closest_trajectory = configuration_space[i]
+
+    return bounce_sol_trunc, closest_trajectory
+
+def plotBounce(bounce_sol, closest_trajectory):
     func_plot, ax1 = plt.subplots()
-    t = np.linspace(0.0, N*a/2, len(bounce_sol_trunc))
+    t = np.linspace(0, N*a, len(bounce_sol))
     ax1.set_xlabel("Euclidean Time")
     ax1.set_ylabel("x")
-    ax1.plot(t, bounce_sol_trunc, 'b', label='Analytic Solution')
-    ax1.plot(t, closest_trajectory, 'g', label='Monte Carlo Solution')
+    ax1.plot(t, bounce_sol, 'b', label='Analytic Solution')
+    ax1.plot(range(len(closest_trajectory)), closest_trajectory, 'g', label='Monte Carlo Solution')
     ax1.legend(loc=1, prop={'size': 7})
     plt.grid(which='both')
     plt.show()
@@ -81,16 +94,15 @@ def cool_update(x):
 def plotArray(array):
     plot_, ax1 = plt.subplots()
     ax1.plot(range(len(array)), array)
+    ax1.set_xlabel("Monte Carlo Time")
     plt.show()
 
 if __name__ == "__main__":
     X = np.loadtxt("configuration_space.txt")
     average_x = np.loadtxt("average_position.txt")
     action_list = np.loadtxt("action_list.txt")
-    potential_bounces = X[500:1000]
+    analytic_bounce = findAnalyticBounce()
+    fv = fmin(V, 4)
     plotArray(average_x)
-    plotBounce(findAnalyticBounce(), potential_bounces)
-    
-    # the peak action corresponds to a bounce
-    # bounce_traj = X[np.argmax(action_list)]
-    # bounce_traj_cooled = cool_update(bounce_traj)
+    bounce_sol_trunc, closest_trajectory = findMonteCarloBounce(analytic_bounce, X, average_x, fv)
+    plotBounce(analytic_bounce, closest_trajectory)
