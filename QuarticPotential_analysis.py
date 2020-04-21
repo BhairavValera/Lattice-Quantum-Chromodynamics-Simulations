@@ -5,6 +5,7 @@ from scipy.integrate import odeint
 from scipy.optimize import fsolve
 from scipy.optimize import curve_fit
 from scipy.stats import pearsonr
+from scipy.stats import chisquare
 from QuarticPotential import N, N_cf, dS, eps, a, b, c, d
 
 def V(x):
@@ -25,6 +26,9 @@ def findAnalyticBounce():
     bounce_sol_neg = np.flip(bounce_sol_pos)
     bounce_sol = list(bounce_sol_neg) + list(bounce_sol_pos)
     return bounce_sol
+
+def bounce_fit(x, a, b, c, d):
+    return a * (np.tanh(x//b) + c)**2 - d
 
 def findMonteCarloBounce(analytic_bounce_sol, configuration_space, average_x, fv):
     """Preprocessing the analytic bounce solution for statistical comparisons"""
@@ -50,25 +54,27 @@ def findMonteCarloBounce(analytic_bounce_sol, configuration_space, average_x, fv
             else:
                 continue
 
-    print(potential_bounce_idx)
     """Finding the closest trajectory"""
     closest_trajectory = np.zeros(N)
-    current_closeness = -np.infty
+    potential_bounce_dict = {}
     for i in potential_bounce_idx:
-        new_closeness = np.corrcoef(configuration_space[i], bounce_sol_trunc)[0][1]
-        if new_closeness > current_closeness:
-            current_closeness = new_closeness
-            closest_trajectory = configuration_space[i]
-
+        roll_value = np.argmin(configuration_space[i]) - np.argmin(bounce_sol_trunc)
+        bounce_sol_trunc = np.roll(bounce_sol_trunc, roll_value)
+        chisquare_value = chisquare(bounce_sol_trunc, configuration_space[i])[0]
+        potential_bounce_dict[abs(chisquare_value)] = i
+    smallest_chisquare = min(potential_bounce_dict.keys())
+    closest_trajectory = configuration_space[potential_bounce_dict[smallest_chisquare]]
     return bounce_sol_trunc, closest_trajectory
 
 def plotBounce(bounce_sol, closest_trajectory):
     func_plot, ax1 = plt.subplots()
-    t = np.linspace(0, N*a, len(bounce_sol))
+    # np.roll(bounce_sol, 1)
+    bounce_t = np.linspace(0, N*a/2, len(bounce_sol))
+    monte_carlo_t = np.linspace(0, N*a/2, len(closest_trajectory))
     ax1.set_xlabel("Euclidean Time")
     ax1.set_ylabel("x")
-    ax1.plot(t, bounce_sol, 'b', label='Analytic Solution')
-    ax1.plot(range(len(closest_trajectory)), closest_trajectory, 'g', label='Monte Carlo Solution')
+    ax1.plot(bounce_t, bounce_sol, 'b', label='Analytic Solution')
+    ax1.plot(monte_carlo_t, closest_trajectory, 'g', label='Monte Carlo Solution')
     ax1.legend(loc=1, prop={'size': 7})
     plt.grid(which='both')
     plt.show()
@@ -103,6 +109,6 @@ if __name__ == "__main__":
     action_list = np.loadtxt("action_list.txt")
     analytic_bounce = findAnalyticBounce()
     fv = fmin(V, 4)
-    plotArray(average_x)
+    # plotArray(average_x)
     bounce_sol_trunc, closest_trajectory = findMonteCarloBounce(analytic_bounce, X, average_x, fv)
     plotBounce(analytic_bounce, closest_trajectory)
