@@ -59,8 +59,8 @@ def findMonteCarloBounce(analytic_bounce_sol, configuration_space, average_x, fv
     potential_bounce_dict = {}
     for i in potential_bounce_idx:
         roll_value = np.argmin(configuration_space[i]) - np.argmin(bounce_sol_trunc)
-        bounce_sol_trunc = np.roll(bounce_sol_trunc, roll_value)
-        chisquare_value = chisquare(bounce_sol_trunc, configuration_space[i])[0]
+        bounce_sol_roll = np.roll(bounce_sol_trunc, roll_value)
+        chisquare_value = chisquare(bounce_sol_roll, configuration_space[i])[0]
         potential_bounce_dict[abs(chisquare_value)] = i
     smallest_chisquare = min(potential_bounce_dict.keys())
     closest_trajectory = configuration_space[potential_bounce_dict[smallest_chisquare]]
