@@ -60,17 +60,18 @@ def findMonteCarloBounce(analytic_bounce_sol, configuration_space, average_x, fv
     for i in potential_bounce_idx:
         roll_value = np.argmin(configuration_space[i]) - np.argmin(bounce_sol_trunc)
         bounce_sol_roll = np.roll(bounce_sol_trunc, roll_value)
-        chisquare_value = chisquare(bounce_sol_roll, configuration_space[i])[0]
-        potential_bounce_dict[abs(chisquare_value)] = i
+        chisquare_value = np.sum((bounce_sol_roll - configuration_space[i])**2)
+        potential_bounce_dict[chisquare_value] = [i, roll_value]
     smallest_chisquare = min(potential_bounce_dict.keys())
-    closest_trajectory = configuration_space[potential_bounce_dict[smallest_chisquare]]
-    return bounce_sol_trunc, closest_trajectory
+    closest_trajectory = configuration_space[potential_bounce_dict[smallest_chisquare][0]]
+    roll_value = potential_bounce_dict[smallest_chisquare][1]
+    return bounce_sol_trunc, closest_trajectory, roll_value
 
-def plotBounce(bounce_sol, closest_trajectory):
+def plotBounce(bounce_sol, closest_trajectory, roll_value):
     func_plot, ax1 = plt.subplots()
-    # np.roll(bounce_sol, 1)
     bounce_t = np.linspace(0, N*a/2, len(bounce_sol))
     monte_carlo_t = np.linspace(0, N*a/2, len(closest_trajectory))
+    closest_trajectory = np.roll(closest_trajectory, -roll_value)
     ax1.set_xlabel("Euclidean Time")
     ax1.set_ylabel("x")
     ax1.plot(bounce_t, bounce_sol, 'b', label='Analytic Solution')
@@ -110,5 +111,5 @@ if __name__ == "__main__":
     analytic_bounce = findAnalyticBounce()
     fv = fmin(V, 4)
     # plotArray(average_x)
-    bounce_sol_trunc, closest_trajectory = findMonteCarloBounce(analytic_bounce, X, average_x, fv)
-    plotBounce(analytic_bounce, closest_trajectory)
+    bounce_sol_trunc, closest_trajectory, roll_value = findMonteCarloBounce(analytic_bounce, X, average_x, fv)
+    plotBounce(analytic_bounce, closest_trajectory, roll_value)
