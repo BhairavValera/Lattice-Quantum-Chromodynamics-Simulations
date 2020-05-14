@@ -6,6 +6,7 @@ from scipy.optimize import fsolve
 from scipy.optimize import curve_fit
 from scipy.stats import pearsonr
 from scipy.stats import chisquare
+from scipy.optimize import root_scalar
 from QuarticPotential import N, N_cf, dS, eps, a, b, c, d
 
 def V(x):
@@ -72,17 +73,19 @@ def plotBounce(bounce_sol, closest_trajectory, roll_value):
     bounce_t = np.linspace(0, N*a/2, len(bounce_sol))
     monte_carlo_t = np.linspace(0, N*a/2, len(closest_trajectory))
     closest_trajectory = np.roll(closest_trajectory, -roll_value)
+    cooled_closest_trajectory = cool_update(closest_trajectory)
     ax1.set_xlabel("Euclidean Time")
     ax1.set_ylabel("x")
     ax1.plot(bounce_t, bounce_sol, 'b', label='Analytic Solution')
     ax1.plot(monte_carlo_t, closest_trajectory, 'g', label='Monte Carlo Solution')
+    ax1.plot(monte_carlo_t, cooled_closest_trajectory, 'r', label='Cooled Monte Carlo Solution')
     ax1.legend(loc=1, prop={'size': 7})
     plt.grid(which='both')
     plt.show()
 	# bounce_sol_plot.savefig('bounce_solution_plot.png')
 
 def cool_update(x):
-    x_cool = np.zeros(N_cf)
+    x_cool = np.zeros(len(x))
     for j in range (1, N - 1):
         old_x = x[j]
         j_inc = (j + 1)
@@ -98,6 +101,48 @@ def cool_update(x):
             x_cool[j] = old_x
     return x_cool
 
+def get_truncated_ensemble(average_x, configuration_space):
+    average_x_truncated = []
+    for i in range(0, len(average_x)):
+        if np.abs(fv - average_x[i])[0] >= 3:
+            average_x_truncated = average_x[0:i]
+            break
+    average_x_truncated = list(average_x_truncated)
+    for i in range(len(average_x_truncated), len(average_x_truncated) - 1 + 100):
+        average_x_truncated.append(average_x[i])
+    ensemble_mean = np.mean(average_x_truncated)
+    two_sigma = 2 * np.std(average_x_truncated)
+    for i in range(len(average_x_truncated) - 1, 0, -1):
+        if np.abs(average_x_truncated[i] - ensemble_mean) > two_sigma:
+            average_x_truncated.pop(i)
+        else:
+            break
+    return average_x_truncated
+
+def calculate_decay_rate_trunc(average_x_truncated, configuration_space, fv, tv):
+    root_result = root_scalar(V, bracket=[fv, tv])
+    b = root_result.root
+    truncated_ensemble_idx = range(len(average_x_truncated))
+    count = 0
+    for idx in truncated_ensemble_idx:
+        for lattice_point in configuration_space[idx]:
+            if lattice_point < b:
+                count += 1
+                break
+    decay_rate = count/len(truncated_ensemble_idx)
+    print(decay_rate)
+    
+def calculate_decay_rate_spatial(configuration_space):
+    N_wall = 0
+    root_result = root_scalar(V, bracket=[fv, tv])
+    b = root_result.root
+    for x in configuration_space:
+        for lattice_point in x:
+            if lattice_point < b:
+                N_wall += 1
+                break
+    print(N_wall/N_cf)
+
 def plotArray(array):
     plot_, ax1 = plt.subplots()
     ax1.plot(range(len(array)), array)
@@ -109,7 +154,10 @@ if __name__ == "__main__":
     average_x = np.loadtxt("average_position.txt")
     action_list = np.loadtxt("action_list.txt")
     analytic_bounce = findAnalyticBounce()
-    fv = fmin(V, 4)
-    # plotArray(average_x)
-    bounce_sol_trunc, closest_trajectory, roll_value = findMonteCarloBounce(analytic_bounce, X, average_x, fv)
-    plotBounce(analytic_bounce, closest_trajectory, roll_value)
+    fv = fmin(V, 10)
+    tv = fmin(V, -10)
+    truncated_ensemble_idx = get_truncated_ensemble(average_x, X)
+    calculate_decay_rate_trunc(truncated_ensemble_idx, X, fv, tv)
+    calculate_decay_rate_spatial(X)
+    # bounce_sol_trunc, closest_trajectory, roll_value = findMonteCarloBounce(analytic_bounce, X, average_x, fv)
+    # plotBounce(analytic_bounce, closest_trajectory, roll_value)
