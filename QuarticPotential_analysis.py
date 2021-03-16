@@ -161,3 +161,4 @@ if __name__ == "__main__":
     calculate_decay_rate_spatial(X)
     # bounce_sol_trunc, closest_trajectory, roll_value = findMonteCarloBounce(analytic_bounce, X, average_x, fv)
     # plotBounce(analytic_bounce, closest_trajectory, roll_value)
+    plotArray(average_x)

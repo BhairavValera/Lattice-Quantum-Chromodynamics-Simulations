@@ -17,13 +17,12 @@ start_time = time.time()
 
 N = 60
 N_cor = 20
-N_cf = 1000
+N_cf = 700
 a = 1.0
 
-c = 0.667558
-d = 0.143112
-epsilon = 0.0353678
-msqcounter = -24.5 * d * c**2
+c = 0.7
+d = 0.25
+epsilon = 0.015
 
 S_bounce = 4
 R = 6.0
@@ -39,7 +38,7 @@ action_list = np.zeros(N_cf)
 
 """Defining the potential in terms of local constants"""
 def V_local_param(phi):
-    return d * (phi**2 - c**2)**2 + epsilon * ((phi-c)/(2.0*c)) + msqcounter * phi**2
+    return d * (phi**2 - c**2)**2 + epsilon * ((phi-c)/(2.0*c))
 
 
 """Defining the potential in terms of the bounce Radius, action, and bubble width"""
